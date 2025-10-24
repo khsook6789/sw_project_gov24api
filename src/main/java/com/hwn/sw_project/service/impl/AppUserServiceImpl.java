@@ -34,7 +34,7 @@ public class AppUserServiceImpl implements AppUserService {
     @Override
     @Transactional(readOnly = true)
     public UserResponse get(Long userId) {
-        var user = userRepo.findById(userId).orElseThrow();
+        var user = userRepo.findById(userId).orElseThrow(()->new IllegalArgumentException());
         return new UserResponse(user.getUserId(),user.getUsername());
     }
 }

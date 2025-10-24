@@ -31,7 +31,7 @@ public class BenefitCategoryServiceImpl implements BenefitCategoryService {
     @Override
     @Transactional(readOnly = true)
     public CategoryResponse get(Long id){
-        var category = categoryRepo.findById(id).orElseThrow();
+        var category = categoryRepo.findById(id).orElseThrow(()->new IllegalArgumentException());
         return toResp(category);
     }
 
@@ -49,7 +49,7 @@ public class BenefitCategoryServiceImpl implements BenefitCategoryService {
 
     @Override
     public CategoryResponse update(Long id, CategoryRequest req){
-        var category = categoryRepo.findById(id).orElseThrow();
+        var category = categoryRepo.findById(id).orElseThrow(()->new IllegalArgumentException());
 
         if(!category.getName().equalsIgnoreCase(req.name())
         && !categoryRepo.existsByName(req.name())){
@@ -62,7 +62,7 @@ public class BenefitCategoryServiceImpl implements BenefitCategoryService {
 
     @Override
     public void delete(Long id){
-        var category = categoryRepo.findById(id).orElseThrow();
+        var category = categoryRepo.findById(id).orElseThrow(()->new IllegalArgumentException());
 
         long refCount = benefitRepo.countByCategory_CategoryId(id);
         if (refCount > 0) {

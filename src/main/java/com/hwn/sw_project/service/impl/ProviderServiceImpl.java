@@ -23,7 +23,7 @@ public class ProviderServiceImpl implements ProviderService {
     public ProviderResponse create(ProviderRequest req) {
         Region region = null;
         if(req.regionCode() != null && !req.regionCode().isBlank()){
-            region = regionRepo.findById(req.regionCode()).orElseThrow();
+            region = regionRepo.findById(req.regionCode()).orElseThrow(()->new IllegalArgumentException());
         }
 
         if(region != null && providerRepo.existsByNameAndRegion_RegionCode(req.name(), region.getRegionCode())){
@@ -43,7 +43,7 @@ public class ProviderServiceImpl implements ProviderService {
     @Transactional(readOnly = true)
     public ProviderResponse get(Long id){
         var provider = providerRepo.findById(id)
-                .orElseThrow();
+                .orElseThrow(()->new IllegalArgumentException());
         return toResp(provider);
     }
 
@@ -73,12 +73,12 @@ public class ProviderServiceImpl implements ProviderService {
 
     @Override
     public ProviderResponse update(Long id, ProviderRequest req){
-        var provider = providerRepo.findById(id).orElseThrow();
+        var provider = providerRepo.findById(id).orElseThrow(()->new IllegalArgumentException());
 
         Region region = null;
         if (req.regionCode() != null && !req.regionCode().isBlank()) {
             region = regionRepo.findById(req.regionCode())
-                    .orElseThrow();
+                    .orElseThrow(()->new IllegalArgumentException());
         }
         if (region != null && !provider.getName().equalsIgnoreCase(req.name())) {
             if (providerRepo.existsByNameAndRegion_RegionCode(req.name(), region.getRegionCode())) {

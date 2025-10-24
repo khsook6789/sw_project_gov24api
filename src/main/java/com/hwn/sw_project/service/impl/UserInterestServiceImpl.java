@@ -23,7 +23,7 @@ public class UserInterestServiceImpl implements UserInterestService {
     @Override
     public InterestResponse add(Long userId, AddInterestRequest req){
         var user = userRepo.findById(userId)
-                .orElseThrow();
+                .orElseThrow(()->new IllegalArgumentException());
 
         String tag = req.tag().trim();
         if (tag.isBlank()) throw new IllegalArgumentException();

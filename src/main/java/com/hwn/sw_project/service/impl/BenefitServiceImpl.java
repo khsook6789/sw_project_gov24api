@@ -20,8 +20,8 @@ public class BenefitServiceImpl implements BenefitService {
 
     @Override
     public BenefitResponse create(BenefitRequest req) {
-        var category = categoryRepo.findById(req.categoryId()).orElseThrow();
-        var provider = providerRepo.findById(req.providerId()).orElseThrow();
+        var category = categoryRepo.findById(req.categoryId()).orElseThrow(()->new IllegalArgumentException());
+        var provider = providerRepo.findById(req.providerId()).orElseThrow(()->new IllegalArgumentException());
         var entity = Benefit.builder()
                 .title(req.title())
                 .category(category)
@@ -37,7 +37,7 @@ public class BenefitServiceImpl implements BenefitService {
     @Override
     @Transactional(readOnly = true)
     public BenefitResponse get(Long id){
-        return benefitRepo.findById(id).map(this::toResp).orElseThrow();
+        return benefitRepo.findById(id).map(this::toResp).orElseThrow(()->new IllegalArgumentException());
     }
 
     @Override
@@ -52,10 +52,10 @@ public class BenefitServiceImpl implements BenefitService {
 
     @Override
     public BenefitResponse update(Long id, BenefitRequest req) {
-        var benefit = benefitRepo.findById(id).orElseThrow();
+        var benefit = benefitRepo.findById(id).orElseThrow(()->new IllegalArgumentException());
         benefit.setTitle(req.title());
-        benefit.setCategory(categoryRepo.findById(req.categoryId()).orElseThrow());
-        benefit.setProvider(providerRepo.findById(req.providerId()).orElseThrow());
+        benefit.setCategory(categoryRepo.findById(req.categoryId()).orElseThrow(()->new IllegalArgumentException()));
+        benefit.setProvider(providerRepo.findById(req.providerId()).orElseThrow(()->new IllegalArgumentException()));
         benefit.setValidFrom(req.validFrom());
         benefit.setValidTo(req.validTo());
         return toResp(benefit);
