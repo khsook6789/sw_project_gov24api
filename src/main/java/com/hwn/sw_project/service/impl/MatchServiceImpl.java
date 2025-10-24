@@ -25,9 +25,9 @@ public class MatchServiceImpl implements MatchService {
     @Override
     public MatchedBenefitResponse create(MatchCreateRequest req){
         AppUser user = userRepo.findById(req.userId())
-                .orElseThrow(()->new IllegalArgumentException());
+                .orElseThrow(()->new IllegalArgumentException("사용자를 찾을 수 없습니다. ID: " + req.userId()));
         Benefit benefit = benefitRepo.findById(req.benefitId())
-                .orElseThrow(()->new IllegalArgumentException());
+                .orElseThrow(()->new IllegalArgumentException("혜택을 찾을 수 없습니다. ID: " + req.benefitId()));
 
         //중복방지
         if(matchRepo.existsByUser_UserIdAndBenefit_BenefitId(user.getUserId(),benefit.getBenefitId())){

@@ -20,7 +20,7 @@ public class AppUserServiceImpl implements AppUserService {
     @Override
     public UserResponse signUp(SignUpRequest req) {
         if(userRepo.existsByUsername(req.username())){
-            throw new IllegalStateException();
+            throw new IllegalStateException("Username already exists: " + req.username());
         }
 
         var user =AppUser.builder()
@@ -34,7 +34,7 @@ public class AppUserServiceImpl implements AppUserService {
     @Override
     @Transactional(readOnly = true)
     public UserResponse get(Long userId) {
-        var user = userRepo.findById(userId).orElseThrow(()->new IllegalArgumentException());
+        var user = userRepo.findById(userId).orElseThrow(()->new IllegalArgumentException("User not found: " + userId));
         return new UserResponse(user.getUserId(),user.getUsername());
     }
 }

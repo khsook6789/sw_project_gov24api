@@ -23,11 +23,11 @@ public class ProviderServiceImpl implements ProviderService {
     public ProviderResponse create(ProviderRequest req) {
         Region region = null;
         if(req.regionCode() != null && !req.regionCode().isBlank()){
-            region = regionRepo.findById(req.regionCode()).orElseThrow(()->new IllegalArgumentException());
+            region = regionRepo.findById(req.regionCode()).orElseThrow(()->new IllegalArgumentException("Region not found: " + req.regionCode()));
         }
 
         if(region != null && providerRepo.existsByNameAndRegion_RegionCode(req.name(), region.getRegionCode())){
-            throw new IllegalStateException();
+            throw new IllegalStateException("Provider already exists in region: " + req.name());
         }
 
         var entity = Provider.builder()
@@ -43,7 +43,7 @@ public class ProviderServiceImpl implements ProviderService {
     @Transactional(readOnly = true)
     public ProviderResponse get(Long id){
         var provider = providerRepo.findById(id)
-                .orElseThrow(()->new IllegalArgumentException());
+                .orElseThrow(()->new IllegalArgumentException("Provider not found: " + id));
         return toResp(provider);
     }
 
@@ -73,16 +73,16 @@ public class ProviderServiceImpl implements ProviderService {
 
     @Override
     public ProviderResponse update(Long id, ProviderRequest req){
-        var provider = providerRepo.findById(id).orElseThrow(()->new IllegalArgumentException());
+        var provider = providerRepo.findById(id).orElseThrow(()->new IllegalArgumentException("Provider not found: " + id));
 
         Region region = null;
         if (req.regionCode() != null && !req.regionCode().isBlank()) {
             region = regionRepo.findById(req.regionCode())
-                    .orElseThrow(()->new IllegalArgumentException());
+                    .orElseThrow(()->new IllegalArgumentException("Region not found: " + req.regionCode()));
         }
         if (region != null && !provider.getName().equalsIgnoreCase(req.name())) {
             if (providerRepo.existsByNameAndRegion_RegionCode(req.name(), region.getRegionCode())) {
-                throw new IllegalStateException();
+                throw new IllegalStateException("Provider already exists in region: " + req.name());
             }
         }
         provider.setName(req.name());
@@ -94,7 +94,7 @@ public class ProviderServiceImpl implements ProviderService {
     @Override
     public void delete(Long id){
         if(!providerRepo.existsById(id)){
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException("Provider not found: " + id);
         }
         providerRepo.deleteById(id);
     }

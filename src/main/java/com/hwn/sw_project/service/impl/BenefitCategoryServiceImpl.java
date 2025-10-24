@@ -20,7 +20,7 @@ public class BenefitCategoryServiceImpl implements BenefitCategoryService {
     @Override
     public CategoryResponse create(CategoryRequest req) {
         if (categoryRepo.existsByName(req.name())){
-            throw new IllegalStateException();
+            throw new IllegalStateException("Category already exists: " + req.name());
         }
         var entity = BenefitCategory.builder()
                 .name(req.name())
@@ -31,7 +31,7 @@ public class BenefitCategoryServiceImpl implements BenefitCategoryService {
     @Override
     @Transactional(readOnly = true)
     public CategoryResponse get(Long id){
-        var category = categoryRepo.findById(id).orElseThrow(()->new IllegalArgumentException());
+        var category = categoryRepo.findById(id).orElseThrow(()->new IllegalArgumentException("Category not found: " + id));
         return toResp(category);
     }
 
@@ -49,11 +49,11 @@ public class BenefitCategoryServiceImpl implements BenefitCategoryService {
 
     @Override
     public CategoryResponse update(Long id, CategoryRequest req){
-        var category = categoryRepo.findById(id).orElseThrow(()->new IllegalArgumentException());
+        var category = categoryRepo.findById(id).orElseThrow(()->new IllegalArgumentException("Category not found: " + id));
 
         if(!category.getName().equalsIgnoreCase(req.name())
         && !categoryRepo.existsByName(req.name())){
-            throw new IllegalStateException();
+            throw new IllegalStateException("Category already exists: " + req.name());
         }
 
         category.setName(req.name());
@@ -62,11 +62,11 @@ public class BenefitCategoryServiceImpl implements BenefitCategoryService {
 
     @Override
     public void delete(Long id){
-        var category = categoryRepo.findById(id).orElseThrow(()->new IllegalArgumentException());
+        var category = categoryRepo.findById(id).orElseThrow(()->new IllegalArgumentException("Category not found: " + id));
 
         long refCount = benefitRepo.countByCategory_CategoryId(id);
         if (refCount > 0) {
-            throw new IllegalStateException();
+            throw new IllegalStateException("Cannot delete category: referenced by " + refCount + " benefit(s).");
         }
 
         categoryRepo.delete(category);
