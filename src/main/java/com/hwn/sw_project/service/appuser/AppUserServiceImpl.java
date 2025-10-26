@@ -1,9 +1,8 @@
-package com.hwn.sw_project.service.impl;
+package com.hwn.sw_project.service.appuser;
 
 import com.hwn.sw_project.dto.user.*;
 import com.hwn.sw_project.entity.AppUser;
 import com.hwn.sw_project.repository.AppUserRepository;
-import com.hwn.sw_project.service.AppUserService;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
