@@ -1,4 +1,4 @@
-package com.hwn.sw_project.service.impl;
+package com.hwn.sw_project.service.match;
 
 import com.hwn.sw_project.dto.match.*;
 import com.hwn.sw_project.entity.AppUser;
@@ -7,7 +7,6 @@ import com.hwn.sw_project.entity.UserMatchedBenefit;
 import com.hwn.sw_project.repository.AppUserRepository;
 import com.hwn.sw_project.repository.BenefitRepository;
 import com.hwn.sw_project.repository.UserMatchedBenefitRepository;
-import com.hwn.sw_project.service.MatchService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;

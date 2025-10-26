@@ -1,7 +1,7 @@
 package com.hwn.sw_project.controller;
 
 import com.hwn.sw_project.dto.user.*;
-import com.hwn.sw_project.service.AppUserService;
+import com.hwn.sw_project.service.appuser.AppUserService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

@@ -1,4 +1,4 @@
-package com.hwn.sw_project.service;
+package com.hwn.sw_project.service.match;
 
 import com.hwn.sw_project.dto.match.*;
 import org.springframework.data.domain.*;

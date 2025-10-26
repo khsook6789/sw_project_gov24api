@@ -1,6 +1,5 @@
 package com.hwn.sw_project.security;
 
-import com.hwn.sw_project.config.JwtProperties;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

@@ -1,7 +1,7 @@
 package com.hwn.sw_project.controller;
 
 import com.hwn.sw_project.dto.provider.*;
-import com.hwn.sw_project.service.ProviderService;
+import com.hwn.sw_project.service.provider.ProviderService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;

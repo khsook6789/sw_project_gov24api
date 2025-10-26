@@ -1,4 +1,4 @@
-package com.hwn.sw_project.service;
+package com.hwn.sw_project.service.benefitcategory;
 
 import com.hwn.sw_project.dto.category.*;
 import org.springframework.data.domain.*;

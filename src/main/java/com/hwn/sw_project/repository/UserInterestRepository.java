@@ -8,7 +8,6 @@ import java.util.List;
 
 public interface UserInterestRepository extends JpaRepository<UserInterest, UserInterestId> {
     List<UserInterest> findByIdUserId(Long userId);
-    List<UserInterest> findByUserId(Long userId); //@Embedded 경로 접근
     List<UserInterest> findByIdTag(String tag);
 
     boolean existsById(UserInterestId id);

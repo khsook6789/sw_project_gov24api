@@ -1,7 +1,7 @@
 package com.hwn.sw_project.controller;
 
 import com.hwn.sw_project.dto.match.*;
-import com.hwn.sw_project.service.MatchService;
+import com.hwn.sw_project.service.match.MatchService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;

@@ -1,9 +1,8 @@
-package com.hwn.sw_project.service.impl;
+package com.hwn.sw_project.service.benefit;
 
 import com.hwn.sw_project.dto.benefit.*;
 import com.hwn.sw_project.entity.*;
 import com.hwn.sw_project.repository.*;
-import com.hwn.sw_project.service.BenefitService;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

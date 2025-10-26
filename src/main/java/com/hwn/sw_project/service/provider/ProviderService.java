@@ -1,4 +1,4 @@
-package com.hwn.sw_project.service;
+package com.hwn.sw_project.service.provider;
 
 import com.hwn.sw_project.dto.provider.*;
 import org.springframework.data.domain.*;

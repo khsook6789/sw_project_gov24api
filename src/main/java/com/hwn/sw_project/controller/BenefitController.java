@@ -1,7 +1,7 @@
 package com.hwn.sw_project.controller;
 
 import com.hwn.sw_project.dto.benefit.*;
-import com.hwn.sw_project.service.BenefitService;
+import com.hwn.sw_project.service.benefit.BenefitService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;

@@ -1,4 +1,4 @@
-package com.hwn.sw_project.service.impl;
+package com.hwn.sw_project.service.provider;
 
 import com.hwn.sw_project.dto.provider.ProviderRequest;
 import com.hwn.sw_project.dto.provider.ProviderResponse;
@@ -6,7 +6,6 @@ import com.hwn.sw_project.entity.Provider;
 import com.hwn.sw_project.entity.Region;
 import com.hwn.sw_project.repository.ProviderRepository;
 import com.hwn.sw_project.repository.RegionRepository;
-import com.hwn.sw_project.service.ProviderService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
@@ -105,8 +104,9 @@ public class ProviderServiceImpl implements ProviderService {
                 provider.getProviderId(),
                 provider.getName(),
                 provider.getType(),
-                region != null ? region.getRegionCode() : null,
-                region != null ? region.getName() : null
+                provider.getRegion() != null ? provider.getRegion().getRegionCode() : null,
+                provider.getCreatedAt(),
+                provider.getUpdatedAt()
         );
     }
 }

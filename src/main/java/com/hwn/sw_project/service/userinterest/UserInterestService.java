@@ -1,4 +1,4 @@
-package com.hwn.sw_project.service;
+package com.hwn.sw_project.service.userinterest;
 
 import com.hwn.sw_project.dto.interest.*;
 

@@ -35,19 +35,31 @@ public class Benefit {
     @Column(name = "valid_to")
     private LocalDate validTo;
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(length = 10)
     private Status status = Status.active;
 
     public enum Status { active, inactive }
 
+    @Builder.Default
     @Column(name = "created_at", nullable = false,updatable = false)
     private Instant createdAt = Instant.now();
 
+    @Builder.Default
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt = Instant.now();
 
-    public void onUpdate(){
-        this.updatedAt = Instant.now();
+    @PrePersist
+    public void prePersist() {
+        Instant now = Instant.now();
+        if (status == null) status = Status.active;
+        if (createdAt == null) createdAt = now;
+        if (updatedAt == null) updatedAt = now;
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        updatedAt = Instant.now();
     }
 }

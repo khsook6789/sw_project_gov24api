@@ -1,11 +1,9 @@
-package com.hwn.sw_project.service.impl;
+package com.hwn.sw_project.service.userinterest;
 
 import com.hwn.sw_project.dto.interest.*;
-import com.hwn.sw_project.entity.AppUser;
 import com.hwn.sw_project.entity.UserInterest;
 import com.hwn.sw_project.repository.AppUserRepository;
 import com.hwn.sw_project.repository.UserInterestRepository;
-import com.hwn.sw_project.service.UserInterestService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

@@ -1,5 +1,6 @@
 package com.hwn.sw_project.dto.match;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 
 public record MatchedBenefitResponse(
@@ -7,6 +8,6 @@ public record MatchedBenefitResponse(
         Long userId,
         Long benefitId,
         String benefitTitle,
-        Double score,
+        BigDecimal score,
         Instant matchedAt
 ) {}

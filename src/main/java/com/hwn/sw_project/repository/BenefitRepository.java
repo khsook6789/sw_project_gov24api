@@ -23,7 +23,7 @@ public interface BenefitRepository extends JpaRepository<Benefit, Long> {
     //제목 기준 검색
     Page<Benefit> findByTitleContainingIgnoreCase(String keyword, Pageable pageable);
 
-    boolean existsByProvider_ProviderIdandTitle(Long providerId,String Title);
+    boolean existsByProvider_ProviderIdAndTitle(Long providerId,String title);
 
     long countByCategory_CategoryId(Long categoryId);
 }

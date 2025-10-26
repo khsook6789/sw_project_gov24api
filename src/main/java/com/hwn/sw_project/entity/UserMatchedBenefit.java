@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.Instant;
+import java.math.BigDecimal;
 
 @Getter
 @Setter
@@ -28,8 +29,14 @@ public class UserMatchedBenefit {
     private Benefit benefit;
 
     @Column(precision = 6, scale = 3)
-    private Double score;
+    private BigDecimal score;
 
+    @Builder.Default
     @Column(name = "matched_at", nullable = false)
     private Instant matchedAt = Instant.now();
+
+    @PrePersist
+    public void prePersist() {
+        if (matchedAt == null) matchedAt = Instant.now();
+    }
 }

@@ -1,7 +1,7 @@
 package com.hwn.sw_project.controller;
 
 import com.hwn.sw_project.dto.interest.*;
-import com.hwn.sw_project.service.UserInterestService;
+import com.hwn.sw_project.service.userinterest.UserInterestService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -21,7 +21,7 @@ public class UserInterestController {
     }
 
     // 관심사 목록
-    @PostMapping
+    @GetMapping
     public List<InterestResponse> list(@PathVariable Long userId) {
         return interestService.list(userId);
     }

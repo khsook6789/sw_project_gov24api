@@ -1,10 +1,9 @@
-package com.hwn.sw_project.service.impl;
+package com.hwn.sw_project.service.benefitcategory;
 
 import com.hwn.sw_project.dto.category.*;
 import com.hwn.sw_project.entity.BenefitCategory;
 import com.hwn.sw_project.repository.BenefitCategoryRepository;
 import com.hwn.sw_project.repository.BenefitRepository;
-import com.hwn.sw_project.service.BenefitCategoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
