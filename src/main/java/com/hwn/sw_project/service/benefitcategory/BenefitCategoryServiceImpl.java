@@ -30,7 +30,7 @@ public class BenefitCategoryServiceImpl implements BenefitCategoryService {
     @Override
     @Transactional(readOnly = true)
     public CategoryResponse get(Long id){
-        var category = categoryRepo.findById(id).orElseThrow(()->new IllegalArgumentException("Category not found: " + id));
+        var category = categoryRepo.findById(id).orElseThrow(()->new IllegalArgumentException("category not found: " + id));
         return toResp(category);
     }
 
