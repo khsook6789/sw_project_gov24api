@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private static final String CLAIM_ROLES = "roles"; // Sonar 불만 줄이기용 상수
+    private static final String CLAIM_ROLES = "roles";
     private static final String PREFIX_BEARER = "Bearer ";
 
     private final JwtProvider jwtProvider;
@@ -41,46 +41,34 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 var claims = jws.getPayload();
                 String username = claims.getSubject();
 
-                // 1) roles 클레임을 "무조건" 컬렉션<String>으로 변환
                 List<String> roleNames = extractRoleNamesSafely(claims.get(CLAIM_ROLES));
 
-                // 2) 빈 경우에는 기본 ROLE_USER 한 개라도 부여(정책에 맞게 조정 가능)
                 if (roleNames.isEmpty()) {
                     roleNames = List.of("ROLE_USER");
                 }
 
-                // 3) GrantedAuthority 리스트로 변환
                 List<GrantedAuthority> authorities = roleNames.stream()
                         .filter(Objects::nonNull)
                         .map(String::trim)
                         .filter(s -> !s.isEmpty())
-                        .map(SimpleGrantedAuthority::new) // SimpleGrantedAuthority는 GrantedAuthority 구현체
+                        .map(SimpleGrantedAuthority::new) //GrantedAuthority 구현체
                         .collect(Collectors.toList());
 
-                // 4) Authentication 세팅
                 Authentication auth = new UsernamePasswordAuthenticationToken(username, null, authorities);
                 SecurityContextHolder.getContext().setAuthentication(auth);
 
-                // (선택) UserDetails를 꼭 써야 한다면 아래처럼 교체
-                // var userDetails = userDetailsService.loadUserByUsername(username);
-                // Authentication auth = new UsernamePasswordAuthenticationToken(userDetails, null, authorities);
-                // SecurityContextHolder.getContext().setAuthentication(auth);
             }
         } catch (Exception ignored) {
-            // 토큰 문제는 익명으로 흘려보내고, 보호 리소스는 Security가 401/403 판단
+            // Security가 401/403 판단
         }
 
         chain.doFilter(req, res);
     }
 
-    /**
-     * roles에 들어오는 다양한 형태(List, 배열, 문자열 등)를 안전하게 List<String>으로 변환
-     */
     @SuppressWarnings("unchecked")
     private List<String> extractRoleNamesSafely(Object raw) {
         if (raw == null) return Collections.emptyList();
 
-        // 1) 이미 List<?> 인 경우
         if (raw instanceof List<?> list) {
             List<String> out = new ArrayList<>();
             for (Object o : list) {
@@ -89,7 +77,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return out;
         }
 
-        // 2) 배열인 경우
         if (raw.getClass().isArray()) {
             int len = java.lang.reflect.Array.getLength(raw);
             List<String> out = new ArrayList<>(len);
@@ -100,7 +87,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return out;
         }
 
-        // 3) 콤마로 이어진 문자열인 경우 "ROLE_USER,ROLE_ADMIN"
         String s = String.valueOf(raw).trim();
         if (s.isEmpty()) return Collections.emptyList();
         if (s.contains(",")) {
