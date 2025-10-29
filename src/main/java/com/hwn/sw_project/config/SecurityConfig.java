@@ -1,5 +1,8 @@
-package com.hwn.sw_project.security;
+package com.hwn.sw_project.config;
 
+import com.hwn.sw_project.security.CustomUserDetailsService;
+import com.hwn.sw_project.security.JwtAuthenticationFilter;
+import com.hwn.sw_project.security.JwtProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.*;
 import org.springframework.http.HttpMethod;
@@ -29,9 +32,26 @@ public class SecurityConfig {
         http.csrf(csrf -> csrf.disable())
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/login", "/api/auth/refresh").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
-                        .anyRequest().authenticated()
+                                // ✅ 1) Preflight 전역 허용
+                                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                                // ✅ 2) 프론트 헬스체크용 엔드포인트 공개 (React에서 /api/health 호출)
+                                .requestMatchers(HttpMethod.GET, "/api/health").permitAll()
+
+                                // 로그인/회원가입/리프레시 공개
+                                .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/login", "/api/auth/refresh").permitAll()
+
+                                // (권장) 정적 리소스/에러 경로 허용
+                                .requestMatchers(
+                                        "/", "/index.html", "/static/**", "/assets/**",
+                                        "/favicon.ico", "/error"
+                                ).permitAll()
+
+                                // 나머지 API는 인증 필요
+                                .anyRequest().authenticated()
+//                        .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/login", "/api/auth/refresh").permitAll()
+//                        .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
+//                        .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .cors(c -> c.configurationSource(corsConfigurationSource()));
@@ -51,10 +71,17 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource(){
         var cfg = new CorsConfiguration();
-        cfg.setAllowedOrigins(List.of("http://localhost:3000")); // 도메인 나중에 수정
-        cfg.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS"));
+        cfg.setAllowedOrigins(List.of("http://localhost:3000")); // React dev 서버
+        cfg.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         cfg.setAllowedHeaders(List.of("*"));
+        cfg.setExposedHeaders(List.of("Authorization"));
         cfg.setAllowCredentials(true);
+
+//        cfg.setAllowedOrigins(List.of("http://localhost:3000")); // 도메인 나중에 수정
+//        cfg.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS"));
+//        cfg.setAllowedHeaders(List.of("*"));
+//        cfg.setAllowCredentials(true);
+
         var src = new UrlBasedCorsConfigurationSource();
         src.registerCorsConfiguration("/**", cfg);
         return src;
