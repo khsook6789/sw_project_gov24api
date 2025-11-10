@@ -10,5 +10,5 @@ public interface AuthService {
     TokenResponse register(SignUpRequest req);
     TokenResponse login(LoginRequest req);
     TokenResponse refresh(String refreshToken);
-    UserResponse me(String username);
+    UserResponse me(String email);
 }

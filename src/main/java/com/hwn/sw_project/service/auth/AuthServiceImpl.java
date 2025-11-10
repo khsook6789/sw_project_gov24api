@@ -28,10 +28,11 @@ public class AuthServiceImpl implements AuthService{
 
     @Override
     public TokenResponse register(SignUpRequest req) {
-        if(userRepo.existsByUsername(req.username())){
-            throw new IllegalStateException("Username already exists: ");
+        if(userRepo.existsByEmail(req.email())){
+            throw new IllegalStateException("Email already exists: ");
         }
         var user = AppUser.builder()
+                .email(req.email())
                 .username(req.username())
                 .password(encoder.encode(req.password()))
                 .createdAt(Instant.now())
@@ -40,41 +41,41 @@ public class AuthServiceImpl implements AuthService{
         userRepo.save(user);
 
         var claims = Map.of(CLAIM_ROLES, Set.of(ROLE_USER));
-        var access = jwt.createAccessToken(user.getUsername(), claims);
-        var refresh = jwt.createRefreshToken(user.getUsername());
+        var access = jwt.createAccessToken(user.getEmail(), claims);
+        var refresh = jwt.createRefreshToken(user.getEmail());
         return new TokenResponse(access, refresh);
     }
 
     @Override
     public TokenResponse login(LoginRequest req) {
         authManager.authenticate(
-                new UsernamePasswordAuthenticationToken(req.username(), req.password())
+                new UsernamePasswordAuthenticationToken(req.email(), req.password())
         );
-        var user = userRepo.findByUsername(req.username()).orElseThrow();
+        var user = userRepo.findByEmail(req.email()).orElseThrow();
         user.setUpdatedAt(Instant.now());
         userRepo.save(user);
 
         var claims = Map.of(CLAIM_ROLES, Set.of(ROLE_USER));
-        var access = jwt.createAccessToken(user.getUsername(), claims);
-        var refresh = jwt.createRefreshToken(user.getUsername());
+        var access = jwt.createAccessToken(user.getEmail(), claims);
+        var refresh = jwt.createRefreshToken(user.getEmail());
         return new TokenResponse(access, refresh);
     }
 
     @Override
     public TokenResponse refresh(String refreshToken) {
         var jws = jwt.parse(refreshToken);
-        var username = jws.getPayload().getSubject();
-        var user = userRepo.findByUsername(username).orElseThrow();
+        var subject = jws.getPayload().getSubject();
+        var user = userRepo.findByEmail(subject).orElseThrow();
 
         var claims = Map.of(CLAIM_ROLES, Set.of(ROLE_USER));
-        var access = jwt.createAccessToken(user.getUsername(), claims);
-        var refresh = jwt.createRefreshToken(user.getUsername());
+        var access = jwt.createAccessToken(user.getEmail(), claims);
+        var refresh = jwt.createRefreshToken(user.getEmail());
         return new TokenResponse(access, refresh);
     }
 
     @Override
-    public UserResponse me(String username) {
-        var user = userRepo.findByUsername(username).orElseThrow();
-        return new UserResponse(user.getUserId(), user.getUsername());
+    public UserResponse me(String email) {
+        var user = userRepo.findByEmail(email).orElseThrow();
+        return new UserResponse(user.getUserId(), user.getEmail(),user.getUsername());
     }
 }

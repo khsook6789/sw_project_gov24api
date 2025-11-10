@@ -18,8 +18,11 @@ public class AppUser {
     @Column(name = "user_id")
     private Long userId;
 
+    @Column(nullable = false,length = 50)
+    private String username; //사용자명
+
     @Column(unique = true, nullable = false, length = 50)
-    private String username;
+    private String email; //기존 username -> email
 
     @Column(nullable = false)
     private String password;
