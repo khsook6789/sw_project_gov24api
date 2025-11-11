@@ -19,9 +19,8 @@ public class Gov24Controller {
     @GetMapping("/services")
     public Mono<PageResponse<ServiceSummary>> list(
             @RequestParam(required = false) Integer page,
-            @RequestParam(required = false) Integer perPage,
-            @RequestParam(required = false,name = "q") String keyword
+            @RequestParam(required = false) Integer perPage
     ){
-        return service.listServices(page, perPage, keyword);
+        return service.listServices(page, perPage);
     }
 }

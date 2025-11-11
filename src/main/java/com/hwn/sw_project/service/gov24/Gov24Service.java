@@ -17,28 +17,20 @@ import java.util.List;
 public class Gov24Service {
     private final WebClient gov24WebClient;
 
-    public Mono<PageResponse<ServiceSummary>> listServices(Integer page, Integer perPage, String q){
+    public Mono<PageResponse<ServiceSummary>> listServices(Integer page, Integer perPage){
         final int pg = (page == null || page < 1) ? 1 : page;
         final int pp = (perPage == null || perPage < 1) ? 10 : perPage;
 
         return gov24WebClient.get()
-                .uri(uri -> {
-                    var b = uri.path("/serviceList")
-                            .queryParam("page", pg)
-                            .queryParam("perPage", pp)
-                            .queryParam("returnType", "JSON");
-
-                    if (q != null && !q.isBlank()) {
-                        b.queryParam("cond[or][서비스명::LIKE]", q);
-                        b.queryParam("cond[or][서비스분야::LIKE]",q);
-                        b.queryParam("cond[or][서비스목적요약::LIKE]",q);
-                        // 서비스명, 서비스분야 OR검색
-                    }
-                    return b.build();
-                })
+                .uri(uri -> uri.path("/serviceList")
+                        .queryParam("page", pg)
+                        .queryParam("perPage", pp)
+                        .queryParam("returnType", "JSON")
+                        .build())
                 .retrieve()
                 .bodyToMono(JsonNode.class)
                 .map(this::toPageResponse);
+
     }
 
     private PageResponse<ServiceSummary> toPageResponse(JsonNode n) {
