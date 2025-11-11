@@ -38,6 +38,7 @@ public class SecurityConfig {
                                 // ✅ 2) 프론트 헬스체크용 엔드포인트 공개 (React에서 /api/health 호출)
                                 .requestMatchers(HttpMethod.GET, "/api/health").permitAll()
 
+                                .requestMatchers("/api/gov24/**").permitAll()
                                 // 로그인/회원가입/리프레시 공개
                                 .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/login", "/api/auth/refresh").permitAll()
 
