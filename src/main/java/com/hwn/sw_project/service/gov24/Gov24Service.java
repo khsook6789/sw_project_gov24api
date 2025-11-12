@@ -24,7 +24,7 @@ public class Gov24Service {
 
     public Mono<PageResponse<ServiceSummary>> listServices(Integer page, Integer perPage){
         final int pg = (page == null || page < 1) ? 1 : page;
-        final int pp = (perPage == null || perPage < 1) ? 10 : perPage;
+        final int pp = (perPage == null || perPage < 1) ? 100 : perPage;
 
         return gov24WebClient.get()
                 .uri(uri -> uri.path("/serviceList")
@@ -89,7 +89,7 @@ public class Gov24Service {
 
     private PageResponse<ServiceSummary> toPageResponse(JsonNode n) {
         int page = n.path("page").asInt(1);
-        int perPage = n.path("perPage").asInt(50);
+        int perPage = n.path("perPage").asInt(10);
         int currentCount = n.path("currentCount").asInt(0);
         long totalCount = n.path("totalCount").asLong(currentCount);
 
