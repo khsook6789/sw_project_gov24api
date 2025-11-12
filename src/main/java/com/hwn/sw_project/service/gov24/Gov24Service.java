@@ -89,7 +89,7 @@ public class Gov24Service {
 
     private PageResponse<ServiceSummary> toPageResponse(JsonNode n) {
         int page = n.path("page").asInt(1);
-        int perPage = n.path("perPage").asInt(10);
+        int perPage = n.path("perPage").asInt(50);
         int currentCount = n.path("currentCount").asInt(0);
         long totalCount = n.path("totalCount").asLong(currentCount);
 
