@@ -1,4 +1,4 @@
-package com.hwn.sw_project.dto.common;
+package com.hwn.sw_project.dto.gov24.common;
 import java.util.List;
 
 public record PageResponse<T>(
