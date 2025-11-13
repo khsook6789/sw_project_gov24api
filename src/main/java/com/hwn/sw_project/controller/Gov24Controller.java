@@ -1,6 +1,6 @@
 package com.hwn.sw_project.controller;
 
-import com.hwn.sw_project.dto.common.PageResponse;
+import com.hwn.sw_project.dto.gov24.common.PageResponse;
 import com.hwn.sw_project.dto.gov24.ServiceDetail;
 import com.hwn.sw_project.dto.gov24.ServiceSummary;
 import com.hwn.sw_project.service.gov24.Gov24Service;

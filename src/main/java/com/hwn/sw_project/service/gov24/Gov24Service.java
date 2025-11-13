@@ -1,7 +1,7 @@
 package com.hwn.sw_project.service.gov24;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.hwn.sw_project.dto.common.PageResponse;
+import com.hwn.sw_project.dto.gov24.common.PageResponse;
 import com.hwn.sw_project.dto.gov24.ServiceDetail;
 import com.hwn.sw_project.dto.gov24.ServiceSummary;
 import lombok.RequiredArgsConstructor;
@@ -41,8 +41,10 @@ public class Gov24Service {
     public Mono<ServiceDetail> getServiceDetail(String svcId){
         return gov24WebClient.get()
                 .uri(uri -> uri.path("/serviceDetail")
-                        .queryParam("serviceId", svcId)     // ← 여기!
+                        .queryParam("page",1)
+                        .queryParam("perPage",1)
                         .queryParam("returnType", "JSON")
+                        .queryParam("cond[서비스ID::EQ]", svcId)
                         .build())
                 .retrieve()
                 .bodyToMono(JsonNode.class)
@@ -82,7 +84,7 @@ public class Gov24Service {
                 getText(obj, "지원내용", null),
                 getText(obj, "선정기준", null),
                 // 상세에는 보통 상세조회URL이 없으므로 null 허용
-                getText(obj, "상세조회URL", null),
+                getText(obj, "온라인신청사이트URL", null),
                 raw
         );
     }
@@ -103,7 +105,7 @@ public class Gov24Service {
                         t(jn, "소관기관명"),
                         t(jn, "서비스분야"),
                         t(jn, "서비스목적요약"),
-                        t(jn, "상세조회URL"),
+                        t(jn, "온라인신청사이트URL"),
                         t(jn, "신청기한"),
                         t(jn, "신청방법")
                 ));
