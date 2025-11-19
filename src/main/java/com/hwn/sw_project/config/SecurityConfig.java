@@ -39,6 +39,8 @@ public class SecurityConfig {
                                 .requestMatchers(HttpMethod.GET, "/api/health").permitAll()
 
                                 .requestMatchers("/api/gov24/**").permitAll()
+
+                                .requestMatchers("/api/recommendations/**").permitAll()
                                 // 로그인/회원가입/리프레시 공개
                                 .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/login", "/api/auth/refresh").permitAll()
 
