@@ -117,13 +117,13 @@ public class SupportMatcher {
 
     public static double score(SupportConditionsDTO s, UserProfile u){
         double sc=0.0;
-        // 성별: 매칭시 +1
+        // 성별: +1
         boolean hasGenderCond = Y(s.JA0101()) || Y(s.JA0102());
         if (hasGenderCond && matchGender(s, u.gender())) {
             sc += 1.0;
         }
 
-        // 나이: 범위 있을 때 중앙에 가까울수록 +[0~1]
+        // 나이: +[0~1]
         if (u.age()!=null && (s.JA0110()!=null || s.JA0111()!=null)) {
             int from = s.JA0110()==null? u.age(): s.JA0110();
             int to   = s.JA0111()==null? u.age(): s.JA0111();
@@ -134,7 +134,7 @@ public class SupportMatcher {
             sc+=ageScore;
         }
 
-        // 소득: 매칭시 +1
+        // 소득: +1
         boolean hasIncomeCond =
                 Y(s.JA0201()) || Y(s.JA0202()) || Y(s.JA0203()) || Y(s.JA0204()) || Y(s.JA0205());
         if (hasIncomeCond
@@ -143,7 +143,7 @@ public class SupportMatcher {
             sc += 1.0;
         }
 
-        // 학생: 매칭시 +1
+        // 학생: +1
         boolean hasStudentCond =
                 Y(s.JA0317()) || Y(s.JA0318()) || Y(s.JA0319()) || Y(s.JA0320());
         if (hasStudentCond
@@ -153,7 +153,7 @@ public class SupportMatcher {
             sc += 1;
         }
 
-        // 취업 상태: 매칭시 +1.5
+        // 취업 상태: +1.5
         boolean hasEmpCond = Y(s.JA0326())||Y(s.JA0327());
         if(hasEmpCond
                 && u.employmentStatus()!=null
@@ -161,7 +161,7 @@ public class SupportMatcher {
             sc+=1.5;
         }
 
-        // 특이사항: 매칭시 +2
+        // 특이사항: +2
         boolean hasSpecialCond =
                         Y(s.JA0301())||Y(s.JA0302())||Y(s.JA0303()) ||
                         Y(s.JA0328())||Y(s.JA0329())||Y(s.JA0330())||
@@ -174,7 +174,7 @@ public class SupportMatcher {
             sc+=2;
         }
 
-        // 업종: 매칭시 +1
+        // 업종: +1
         boolean hasIndustryCond =
                 Y(s.JA1201())||Y(s.JA1202())||Y(s.JA1299())||
                 Y(s.JA2201())||Y(s.JA2202())||Y(s.JA2203())||Y(s.JA2299());

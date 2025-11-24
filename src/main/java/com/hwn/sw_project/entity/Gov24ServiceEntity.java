@@ -35,4 +35,8 @@ public class Gov24ServiceEntity {
 
     @Column(name = "detail_url", length = 255)
     private String detailUrl;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "svc_id", referencedColumnName = "svc_id", insertable = false, updatable = false)
+    private Gov24ServiceDetailEntity detail;
 }

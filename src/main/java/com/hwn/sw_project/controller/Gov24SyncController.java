@@ -1,5 +1,6 @@
 package com.hwn.sw_project.controller;
 
+import com.hwn.sw_project.service.gov24.Gov24DetailSyncService;
 import com.hwn.sw_project.service.gov24.Gov24SyncService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -11,10 +12,17 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/admin/gov24")
 public class Gov24SyncController {
     private final Gov24SyncService syncService;
+    private final Gov24DetailSyncService detailSyncService;
 
     @PostMapping("/sync-servicelist")
     public String syncServiceList(){
         syncService.syncAllFromApi();
+        return "ok";
+    }
+
+    @PostMapping("/sync-details")
+    public String syncAllDetails(){
+        detailSyncService.syncAllDetails();
         return "ok";
     }
 }

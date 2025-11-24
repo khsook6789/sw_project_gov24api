@@ -1,17 +1,29 @@
 package com.hwn.sw_project.service.gov24;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hwn.sw_project.dto.gov24.common.PageResponse;
 import com.hwn.sw_project.dto.gov24.ServiceDetail;
 import com.hwn.sw_project.dto.gov24.ServiceSummary;
+import com.hwn.sw_project.entity.Gov24ServiceDetailEntity;
+import com.hwn.sw_project.entity.Gov24ServiceEntity;
+import com.hwn.sw_project.repository.Gov24ServiceRepository;
+import com.hwn.sw_project.repository.Gov24ServiceDetailRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
+import reactor.core.scheduler.Schedulers;
 
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +33,69 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class Gov24Service {
     private final WebClient gov24WebClient;
+
+    private final Gov24ServiceRepository serviceRepo;
+    private final Gov24ServiceDetailRepository detailRepo;
+    private final ObjectMapper objectMapper;
+
+    // ---- ServiceDetail DTO -> 엔티티 매핑 ----
+    private Gov24ServiceDetailEntity toDetailEntity(
+            ServiceDetail dto,
+            Gov24ServiceEntity serviceEntity
+    ){
+        // 수정일시 파싱 (여러 포맷 가능성을 대비해 헬퍼 메서드 사용)
+        LocalDate apiUpdatedAt = parseUpdatedAt(dto.updatedAt());
+
+//        String rawJson = null;
+//        if (dto.raw() != null) {
+//            try {
+//                rawJson = objectMapper.writeValueAsString(dto.raw());
+//            } catch (JsonProcessingException e) {
+//
+//            }
+//        }
+
+        return Gov24ServiceDetailEntity.builder()
+                .svcId(serviceEntity.getSvcId())
+                .supportTarget(dto.supportTarget())
+                .supportContent(dto.supportContent())
+                .selectionCriteria(dto.selectionCriteria())
+                .requiredDocs(dto.requiredDocs())
+                .inquiry(dto.inquiry())
+                .law(dto.law())
+                .localRegulation(dto.localRegulation())
+                .adminRule(dto.adminRule())
+                .homepage(dto.homepage())
+                .supportType(dto.supportType())
+                .receiveOrg(dto.receiveOrg())
+                .apiUpdatedAt(apiUpdatedAt)
+                .rawJson(null)
+                .build();
+    }
+
+    public Page<Gov24ServiceEntity> searchSortedByUpdated(
+            String keyword,
+            String category,
+            Pageable pageable
+    ) {
+        if ((keyword == null || keyword.isBlank()) && (category == null || category.isBlank())) {
+            return serviceRepo.findAllOrderByUpdated(pageable);
+        }
+        return serviceRepo.search(keyword, category, pageable);
+    }
+
+
+    // ---- "수정일시" String -> LocalDateTime 변환 헬퍼 ----
+    private LocalDate parseUpdatedAt(String updatedAt) {
+        if (updatedAt == null || updatedAt.isBlank()) return null;
+        try {
+            return LocalDate.parse(updatedAt, DateTimeFormatter.ISO_LOCAL_DATE);
+        } catch (DateTimeParseException e) {
+            // 필요하면 다른 포맷도 추가
+            return null;
+        }
+
+    }
 
     public Mono<PageResponse<ServiceSummary>> listServices(Integer page, Integer perPage){
         final int pg = (page == null || page < 1) ? 1 : page;
@@ -48,7 +123,52 @@ public class Gov24Service {
                         .build())
                 .retrieve()
                 .bodyToMono(JsonNode.class)
-                .map(this::toServiceDetail);
+                .map(this::toServiceDetail)
+                .flatMap(dto ->
+                        Mono.fromCallable(() -> {
+
+                                    // summary 엔티티 조회
+                                    var summaryOpt = serviceRepo.findById(svcId);
+
+                                    if (summaryOpt.isPresent()) {
+                                        var summaryEntity = summaryOpt.get();
+
+                                        var existingDetailOpt = detailRepo.findById(svcId);
+
+                                        var detailEntity = existingDetailOpt
+                                                .map(ed -> {
+                                                    // 기존 엔티티 업데이트
+                                                    ed.setSupportTarget(dto.supportTarget());
+                                                    ed.setSupportContent(dto.supportContent());
+                                                    ed.setSelectionCriteria(dto.selectionCriteria());
+                                                    ed.setRequiredDocs(dto.requiredDocs());
+                                                    ed.setInquiry(dto.inquiry());
+                                                    ed.setLaw(dto.law());
+                                                    ed.setLocalRegulation(dto.localRegulation());
+                                                    ed.setAdminRule(dto.adminRule());
+                                                    ed.setHomepage(dto.homepage());
+                                                    ed.setSupportType(dto.supportType());
+                                                    ed.setReceiveOrg(dto.receiveOrg());
+                                                    ed.setApiUpdatedAt(parseUpdatedAt(dto.updatedAt()));
+//                                                    if (dto.raw() != null) {
+//                                                        try {
+//                                                            ed.setRawJson(objectMapper.writeValueAsString(dto.raw()));
+//                                                        } catch (JsonProcessingException ignore) {}
+//                                                    }
+                                                    return ed;
+                                                })
+                                                .orElseGet(() -> toDetailEntity(dto, summaryEntity));
+                                        if (detailEntity.getSvcId() == null) {
+                                            throw new IllegalStateException("detailEntity.svcId is null! svcId=" + svcId);
+                                        }
+
+                                        detailRepo.save(detailEntity);
+                                    }
+
+                                    return dto;
+                                })
+                                .subscribeOn(Schedulers.boundedElastic())
+                );
     }
 
     private ServiceDetail toServiceDetail(JsonNode root){
