@@ -4,10 +4,7 @@ import com.hwn.sw_project.dto.gov24.ServiceSummary;
 import com.hwn.sw_project.dto.gov24.common.PageResponse;
 import com.hwn.sw_project.service.gov24.Gov24DbService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -30,5 +27,11 @@ public class Gov24DbController {
             @RequestParam(required = false) String sort
     ){
         return dbService.searchFromDb(page, size, keyword, category, sort);
+    }
+
+    // ★ 클릭 추적 API
+    @PostMapping("/services/{svcId}/click")
+    public void click(@PathVariable String svcId) {
+        dbService.increaseViewCount(svcId);
     }
 }

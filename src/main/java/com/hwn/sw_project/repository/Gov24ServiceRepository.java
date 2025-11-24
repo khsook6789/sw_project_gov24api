@@ -3,6 +3,7 @@ import com.hwn.sw_project.entity.Gov24ServiceEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import org.springframework.data.repository.query.Param;
@@ -57,4 +58,9 @@ public interface Gov24ServiceRepository extends JpaRepository<Gov24ServiceEntity
             @Param("category") String category,
             Pageable pageable
     );
+
+    @Modifying
+    @Query("update Gov24ServiceEntity g set g.viewCount = g.viewCount + 1 " +
+            "where g.svcId = :svcId")
+    int incrementViewCount(@Param("svcId") String svcId);
 }

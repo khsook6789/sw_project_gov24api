@@ -98,7 +98,7 @@ public class Gov24Client {
             }
 
             list.add(new ServiceSummary(
-                    svcId, title, provider, category, summary, detailUrl, applyPeriod, applyMethod
+                    svcId, title, provider, category, summary, detailUrl, applyPeriod, applyMethod,0L
             ));
         }
         return new PageResponse<>(page, perPage, currentCount, totalCount, list);

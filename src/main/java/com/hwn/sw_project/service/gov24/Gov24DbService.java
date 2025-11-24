@@ -41,6 +41,9 @@ public class Gov24DbService {
             sortSpec = Sort.by(Sort.Order.asc("svcId"));
         } else if ("title".equalsIgnoreCase(sort)) {
             sortSpec = Sort.by(Sort.Order.asc("title"));  // 가나다
+        } else if ("popular".equalsIgnoreCase(sort)) {
+            // 인기 순: 조회수 내림차순
+            sortSpec = Sort.by(Sort.Direction.DESC, "viewCount");
         } else {
             // 알 수 없는 sort 값이면 기본으로 업데이트순 사용
             sortSpec = Sort.by(
@@ -82,7 +85,14 @@ public class Gov24DbService {
                 e.getSummary(),
                 null,                    // detailUrl = null
                 e.getApplyPeriod(),
-                e.getApplyMethod()
+                e.getApplyMethod(),
+                e.getViewCount()
         );
+    }
+
+    // 조회수 증가용 (읽기 전용 해제)
+    @Transactional
+    public void increaseViewCount(String svcId) {
+        repo.incrementViewCount(svcId);
     }
 }

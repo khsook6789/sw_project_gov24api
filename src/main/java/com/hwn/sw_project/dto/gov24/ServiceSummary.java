@@ -8,5 +8,6 @@ public record ServiceSummary(
         String summary,
         String detailUrl,
         String applyPeriod,
-        String applyMethod
+        String applyMethod,
+        Long viewCount
 ) {}

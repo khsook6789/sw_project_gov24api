@@ -227,7 +227,8 @@ public class Gov24Service {
                         t(jn, "서비스목적요약"),
                         t(jn, "온라인신청사이트URL"),
                         t(jn, "신청기한"),
-                        t(jn, "신청방법")
+                        t(jn, "신청방법"),
+                        0L
                 ));
             }
         }
