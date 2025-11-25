@@ -3,6 +3,8 @@ package com.hwn.sw_project.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
+
 @Entity
 @Table(name = "gov24_service")
 @Getter
@@ -38,6 +40,12 @@ public class Gov24ServiceEntity {
 
     @Column(name = "view_count", nullable = false)
     private long viewCount;
+
+    @Column(name = "registered_at")
+    private LocalDate regDate;
+
+    @Column(name = "deadline")
+    private LocalDate deadline;
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "svc_id", referencedColumnName = "svc_id", insertable = false, updatable = false)

@@ -83,9 +83,11 @@ public class Gov24DbService {
                 e.getProviderName(),
                 e.getCategory(),
                 e.getSummary(),
-                null,                    // detailUrl = null
+                e.getDetailUrl(),                 // detailUrl = null
                 e.getApplyPeriod(),
                 e.getApplyMethod(),
+                e.getRegDate(),
+                e.getDeadline(),
                 e.getViewCount()
         );
     }

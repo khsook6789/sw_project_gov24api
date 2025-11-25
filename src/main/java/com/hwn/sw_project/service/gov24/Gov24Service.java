@@ -10,6 +10,7 @@ import com.hwn.sw_project.entity.Gov24ServiceDetailEntity;
 import com.hwn.sw_project.entity.Gov24ServiceEntity;
 import com.hwn.sw_project.repository.Gov24ServiceRepository;
 import com.hwn.sw_project.repository.Gov24ServiceDetailRepository;
+import com.hwn.sw_project.util.Gov24DateParser;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -218,22 +219,41 @@ public class Gov24Service {
         List<ServiceSummary> list = new ArrayList<>();
         JsonNode data = n.path("data");
         if (data != null && data.isArray()) {
-            for(JsonNode jn : data) {
+            for (JsonNode jn : data) {
+
+                String svcId        = t(jn, "서비스ID");
+                String title        = t(jn, "서비스명");
+                String providerName = t(jn, "소관기관명");
+                String category     = t(jn, "서비스분야");
+                String summary      = t(jn, "서비스목적요약");
+                String detailUrl    = t(jn, "온라인신청사이트URL");
+                String applyPeriod  = t(jn, "신청기한");
+                String applyMethod  = t(jn, "신청방법");
+
+                String regRaw       = t(jn, "등록일시");   // 새로 추가
+                String deadlineRaw  = t(jn, "신청기한");   // 새로 추가
+
+                var regDate   = Gov24DateParser.parseSingleDate(regRaw);
+                var deadline  = Gov24DateParser.parseSingleDate(deadlineRaw);
+
                 list.add(new ServiceSummary(
-                        t(jn, "서비스ID"),
-                        t(jn, "서비스명"),
-                        t(jn, "소관기관명"),
-                        t(jn, "서비스분야"),
-                        t(jn, "서비스목적요약"),
-                        t(jn, "온라인신청사이트URL"),
-                        t(jn, "신청기한"),
-                        t(jn, "신청방법"),
-                        0L
+                        svcId,
+                        title,
+                        providerName,
+                        category,
+                        summary,
+                        detailUrl,
+                        applyPeriod,
+                        applyMethod,
+                        regDate,
+                        deadline,
+                        0L         // viewCount
                 ));
             }
         }
         return new PageResponse<>(page, perPage, currentCount, totalCount, list);
     }
+
 
     private static String getText(JsonNode n, String key, String def) {
         JsonNode v = n.path(key);

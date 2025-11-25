@@ -4,7 +4,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.hwn.sw_project.dto.gov24.ServiceSummary;
 import com.hwn.sw_project.dto.gov24.SupportConditionsPage;
 import com.hwn.sw_project.dto.gov24.common.PageResponse;
+import com.hwn.sw_project.util.Gov24DateParser;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -14,6 +16,7 @@ import reactor.core.publisher.Mono;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class Gov24Client {
@@ -49,18 +52,42 @@ public class Gov24Client {
                         .queryParam("perPage",1)
                         .queryParam("serviceKey",apiKey)
                         .queryParam("cond[서비스ID::EQ]", svcId)
+//                        .queryParam("cond[or][서비스ID::EQ]", svcId)
                         .queryParam("returnType", "JSON")
                         .build())
                 .retrieve()
                 .bodyToMono(JsonNode.class)
+                .doOnNext(root -> {
+                    int current = root.path("currentCount").asInt(-1);
+                    log.info("serviceList by svcId={} -> currentCount={}", svcId, current);
+                })
                 .map(this::toServiceSummaryPage)
-                .map(page->{
+                .flatMap(page -> {
                     var data = page.data();
                     if (data == null || data.isEmpty()) {
-                        return null; // 못 찾으면 null 반환 (호출 쪽에서 null 체크)
+                        log.info("no ServiceSummary found for svcId={}", svcId);
+                        return Mono.empty();    // 🔹 null 대신 빈 Mono
                     }
-                    return data.get(0); // 첫 번째 ServiceSummary만 사용
+                    return Mono.just(data.get(0));
                 });
+    }
+
+    public Mono<List<ServiceSummary>> fetchServiceSummariesBySvcIds(List<String> svcIds){
+        if (svcIds == null || svcIds.isEmpty()) {
+            return Mono.just(List.of());
+        }
+
+        return gov24WebClient.get()
+                .uri(uri -> buildServiceListByIds(
+                        uri,
+                        svcIds,
+                        1,                          // page
+                        Math.max(svcIds.size(), 1)
+                ))
+                .retrieve()
+                .bodyToMono(JsonNode.class)
+                .map(this::toServiceSummaryPage)
+                .map(PageResponse::data); // List<ServiceSummary>
     }
 
     private java.net.URI buildServiceListByIds(UriBuilder uri, List<String> svcIds, int page, int perPage){
@@ -91,6 +118,12 @@ public class Gov24Client {
             var summary = n.path("서비스목적요약").asText(null);
             var applyPeriod = n.path("신청기한").asText(null);
             var applyMethod = n.path("신청방법").asText(null);
+            var regDateRaw = n.path("등록일시").asText(null);
+            var deadlineRaw = n.path("신청기한").asText(null);
+
+            var regDate  = Gov24DateParser.parseSingleDate(regDateRaw);
+            var deadline = Gov24DateParser.parseSingleDate(deadlineRaw);
+
             // 상세 URL이 있다면 필드명에 맞춰 추출
             String detailUrl = null;
             if (n.has("온라인신청사이트URL")) {
@@ -98,7 +131,7 @@ public class Gov24Client {
             }
 
             list.add(new ServiceSummary(
-                    svcId, title, provider, category, summary, detailUrl, applyPeriod, applyMethod,0L
+                    svcId, title, provider, category, summary, detailUrl, applyPeriod, applyMethod, regDate, deadline, 0L
             ));
         }
         return new PageResponse<>(page, perPage, currentCount, totalCount, list);
