@@ -8,8 +8,12 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Optional;
+
 @Repository
 public interface Gov24ServiceRepository extends JpaRepository<Gov24ServiceEntity, String> {
+    Optional<Gov24ServiceEntity> findBySvcId(String svcId);
+
     // 카테고리 필터링
     Page<Gov24ServiceEntity> findByCategory(String category, Pageable pageable);
 
