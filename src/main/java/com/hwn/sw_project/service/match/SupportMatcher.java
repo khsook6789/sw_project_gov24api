@@ -17,6 +17,7 @@ public class SupportMatcher {
     public static boolean matchGender(SupportConditionsDTO s, String g){
         boolean any = Y(s.JA0101()) || Y(s.JA0102());
         if(!any) return true;
+        if (g == null) return true;
         return ("M".equals(g) && Y(s.JA0101())) || ("F".equals(g) && Y(s.JA0102()));
     }
 
@@ -32,7 +33,7 @@ public class SupportMatcher {
     public static boolean matchIncome(SupportConditionsDTO s, String b){
         boolean any = Y(s.JA0201())||Y(s.JA0202())||Y(s.JA0203())||Y(s.JA0204())||Y(s.JA0205());
         if(!any) return true;
-        if(b==null) return false;
+        if(b==null||"모름".equals(b)) return true;
         return switch (b){
             case "0-50" -> Y(s.JA0201());
             case "51-75" -> Y(s.JA0202());
@@ -57,7 +58,7 @@ public class SupportMatcher {
 
     public static boolean matchEmployment(SupportConditionsDTO s, String emp){
         boolean any = Y(s.JA0326())||Y(s.JA0327());
-        if(!any || emp==null) return true;
+        if(!any || emp==null||"해당사항없음".equals(emp)) return true;
         return ("근로자/직장인".equals(emp) && Y(s.JA0326()))
                 || ("구직자/실업자".equals(emp) && Y(s.JA0327()));
     }
@@ -89,7 +90,7 @@ public class SupportMatcher {
     }
 
     public static boolean matchIndustry(SupportConditionsDTO s, String ind){
-        if(ind==null) return true;
+        if(ind==null||"해당사항없음".equals(ind)) return true;
         boolean any =
                 Y(s.JA1201())||Y(s.JA1202())||Y(s.JA1299())||
                         Y(s.JA2201())||Y(s.JA2202())||Y(s.JA2203())||Y(s.JA2299());
@@ -105,6 +106,7 @@ public class SupportMatcher {
         };
     }
 
+    /* -------------------- 최종 매칭 -------------------- */
     public static boolean matches(SupportConditionsDTO s, UserProfile u){
         return matchGender(s, u.gender())
                 && matchAge(s, u.age())
@@ -115,11 +117,12 @@ public class SupportMatcher {
                 && matchIndustry(s, u.industry());
     }
 
+    /* -------------------- 점수 계산 -------------------- */
     public static double score(SupportConditionsDTO s, UserProfile u){
         double sc=0.0;
         // 성별: +1
         boolean hasGenderCond = Y(s.JA0101()) || Y(s.JA0102());
-        if (hasGenderCond && matchGender(s, u.gender())) {
+        if (hasGenderCond && u.gender()!=null && matchGender(s, u.gender())) {
             sc += 1.0;
         }
 
@@ -139,6 +142,7 @@ public class SupportMatcher {
                 Y(s.JA0201()) || Y(s.JA0202()) || Y(s.JA0203()) || Y(s.JA0204()) || Y(s.JA0205());
         if (hasIncomeCond
                 && u.incomeBracket()!=null
+                && !"모름".equals(u.incomeBracket())
                 && matchIncome(s, u.incomeBracket())) {
             sc += 1.0;
         }
@@ -157,6 +161,7 @@ public class SupportMatcher {
         boolean hasEmpCond = Y(s.JA0326())||Y(s.JA0327());
         if(hasEmpCond
                 && u.employmentStatus()!=null
+                && !"해당사항없음".equals(u.employmentStatus())
                 && matchEmployment(s, u.employmentStatus())) {
             sc+=1.5;
         }
@@ -180,6 +185,7 @@ public class SupportMatcher {
                 Y(s.JA2201())||Y(s.JA2202())||Y(s.JA2203())||Y(s.JA2299());
         if(hasIndustryCond
                 && u.industry()!=null
+                && !"해당사항없음".equals(u.industry())
                 && matchIndustry(s, u.industry())) {
             sc+=1.0;
         }
@@ -187,9 +193,11 @@ public class SupportMatcher {
         return sc;
     }
 
+    /* -------------------- match reason -------------------- */
     public static List<String> reasons(SupportConditionsDTO s, UserProfile u){
         List<String> r = new ArrayList<>();
-        if ((Y(s.JA0101())||Y(s.JA0102())) && matchGender(s,u.gender())) {
+
+        if (u.gender()!=null && (Y(s.JA0101())||Y(s.JA0102())) && matchGender(s,u.gender())) {
             r.add("성별: " + ("M".equals(u.gender()) ? "남성" : "여성"));
         }
         if (u.age()!=null && matchAge(s,u.age()) && (s.JA0110()!=null || s.JA0111()!=null)) {

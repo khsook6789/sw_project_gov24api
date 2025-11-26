@@ -66,7 +66,7 @@ public class Gov24Client {
                     var data = page.data();
                     if (data == null || data.isEmpty()) {
                         log.info("no ServiceSummary found for svcId={}", svcId);
-                        return Mono.empty();    // 🔹 null 대신 빈 Mono
+                        return Mono.empty();    //  null 대신 빈 Mono
                     }
                     return Mono.just(data.get(0));
                 });
