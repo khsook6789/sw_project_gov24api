@@ -27,12 +27,6 @@ public class AppUser {
     @Column(nullable = false)
     private String password;
 
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
-    private UserInfo userInfo;
-
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
-    private List<UserInterest> interests;
-
     @Builder.Default
     @Column(name = "created_at", nullable = false,updatable = false)
     private Instant createdAt = Instant.now();
