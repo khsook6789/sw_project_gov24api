@@ -320,10 +320,17 @@ public class RecommendationService {
                 .doOnNext(list -> {
                     cachedConditions.set(list);
                     cachedAt = Instant.now();
-                    log.info("🔄 refreshed supportConditions cache, size={}", list.size());
+                    log.info("refreshed supportConditions cache, size={}", list.size());
                 });
     }
 
+    public Mono<Void> preloadSupportConditions() {
+        return getAllSupportConditionsCached()
+                .doOnNext(list ->
+                        log.info("preload supportConditions done, size={}", list.size())
+                )
+                .then();
+    }
 
     private record Scored(String svcId, double score) {}
 }

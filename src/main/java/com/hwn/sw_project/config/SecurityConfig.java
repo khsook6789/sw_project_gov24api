@@ -38,6 +38,9 @@ public class SecurityConfig {
                                 // ✅ 2) 프론트 헬스체크용 엔드포인트 공개 (React에서 /api/health 호출)
                                 .requestMatchers(HttpMethod.GET, "/api/health").permitAll()
 
+                                // ✅ 3) admin 동기화 API는 ADMIN 권한 필수
+                                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+
                                 .requestMatchers("/api/gov24/**").permitAll()
 
                                 .requestMatchers("/api/recommendations/**").permitAll()
