@@ -27,6 +27,11 @@ public class AppUser {
     @Column(nullable = false)
     private String password;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    @Builder.Default
+    private UserRole role = UserRole.USER;
+
     @Builder.Default
     @Column(name = "created_at", nullable = false,updatable = false)
     private Instant createdAt = Instant.now();

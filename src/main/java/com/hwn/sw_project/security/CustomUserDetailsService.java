@@ -1,5 +1,6 @@
 package com.hwn.sw_project.security;
 
+import com.hwn.sw_project.entity.AppUser;
 import com.hwn.sw_project.repository.AppUserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -15,11 +16,22 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        var u = userRepo.findByEmail(email)
-                .orElseThrow(()-> new UsernameNotFoundException("Not found"+email));
+        AppUser u = userRepo.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("Not found " + email));
 
-        var authorities = List.of(new SimpleGrantedAuthority("Role_USER"));
+        // ✅ AppUser.role -> ROLE_XXX 로 변환
+        String roleName = "ROLE_" + u.getRole().name(); // ex) ROLE_USER, ROLE_ADMIN
 
-        return new User(u.getEmail(),u.getPassword(),true,true,true,true,authorities);
+        var authorities = List.of(new SimpleGrantedAuthority(roleName));
+
+        return new User(
+                u.getEmail(),
+                u.getPassword(),
+                true,  // enabled
+                true,  // accountNonExpired
+                true,  // credentialsNonExpired
+                true,  // accountNonLocked
+                authorities
+        );
     }
 }
