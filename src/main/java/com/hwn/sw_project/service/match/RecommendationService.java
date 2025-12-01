@@ -6,7 +6,9 @@ import com.hwn.sw_project.dto.gov24.SupportConditionsDTO;
 import com.hwn.sw_project.dto.gov24.SupportConditionsPage;
 import com.hwn.sw_project.dto.gov24.RecommendationItem;
 import com.hwn.sw_project.dto.gov24.UserProfile;
+import com.hwn.sw_project.entity.Gov24ServiceDetailEntity;
 import com.hwn.sw_project.entity.Gov24ServiceEntity;
+import com.hwn.sw_project.repository.Gov24ServiceDetailRepository;
 import com.hwn.sw_project.repository.Gov24ServiceRepository;
 import com.hwn.sw_project.service.gov24.Gov24Client;
 import com.hwn.sw_project.service.gov24.Gov24Service;
@@ -29,11 +31,12 @@ import java.util.concurrent.atomic.AtomicReference;
 public class RecommendationService {
     private final Gov24Client gov24Client;
     private final Gov24ServiceRepository serviceRepo;
+    private final Gov24ServiceDetailRepository serviceDetailRepo;
 
     // 한 번에 받아오는 supportConditions 페이지 사이즈
     private static final int CONDITIONS_PER_PAGE = 200;
 
-    // ★ In-memory 캐시
+    // In-memory 캐시
     private final AtomicReference<List<SupportConditionsDTO>> cachedConditions = new AtomicReference<>();
     private volatile Instant cachedAt = null;
     // TTL은 적당히 조정 가능 (예: 30분)
@@ -102,17 +105,41 @@ public class RecommendationService {
                         return Mono.just(List.<RecommendationItem>of());
                     }
 
-                    // 3) DB에서 serviceList 요약 한 번에 조회 (블로킹이므로 boundedElastic 사용)
-                    return Mono.fromCallable(() -> serviceRepo.findBySvcIdIn(svcIds))
+                    // 3) DB에서 serviceList 요약 + detail(homepage) 함께 조회 (블로킹이므로 boundedElastic 사용)
+                    return Mono.fromCallable(() -> {
+                                List<Gov24ServiceEntity> entities = serviceRepo.findBySvcIdIn(svcIds);
+                                List<Gov24ServiceDetailEntity> details = serviceDetailRepo.findBySvcIdIn(svcIds);
+
+                                // svcId -> homepage 맵
+                                Map<String, String> homepageMap = details.stream()
+                                        .filter(d -> d.getSvcId() != null)
+                                        .filter(d -> d.getHomepage() != null && !d.getHomepage().isBlank())
+                                        .collect(Collectors.toMap(
+                                                Gov24ServiceDetailEntity::getSvcId,
+                                                d -> {
+                                                    String hp = d.getHomepage().trim();
+                                                    if (hp.contains("||")) {
+                                                        return hp.split("\\|\\|")[0];
+                                                    }
+                                                    return hp;
+                                                },
+                                                (a, b) -> a
+                                        ));
+
+                                return new JoinData(entities, homepageMap);
+                            })
                             .subscribeOn(Schedulers.boundedElastic())
-                            .map(entities -> {
+                            .map(joinData -> {
+                                List<Gov24ServiceEntity> entities = joinData.entities();
+                                Map<String, String> homepageMap = joinData.homepageMap();
+
                                 // Entity → ServiceSummary 변환
                                 List<ServiceSummary> summaries = entities.stream()
                                         .map(this::toSummary)
                                         .toList();
 
-                                // Scored + Summary join
-                                List<RecommendationItem> items = mapJoin(topScored, summaries, condById, user);
+                                // Scored + Summary + homepage join
+                                List<RecommendationItem> items = mapJoin(topScored, summaries, condById, homepageMap, user);
 
                                 // 5) 카테고리 boost 적용
                                 List<RecommendationItem> boosted =
@@ -126,6 +153,7 @@ public class RecommendationService {
                                 log.info("after category boost & limit: {}", finalList.size());
                                 return finalList;
                             });
+
                 });
     }
 
@@ -272,6 +300,7 @@ public class RecommendationService {
     private List<RecommendationItem> mapJoin(List<Scored> scored,
                                              List<ServiceSummary> summaries,
                                              Map<String, SupportConditionsDTO> condById,
+                                             Map<String, String> homepageMap,
                                              UserProfile user) {
         Map<String, ServiceSummary> byId = summaries.stream()
                 .collect(Collectors.toMap(ServiceSummary::svcId, s -> s, (a, b) -> a));
@@ -289,6 +318,10 @@ public class RecommendationService {
 
             double roundScore = Math.round(s.score * 10000) / 10000.0;
 
+            String homepage = (homepageMap != null)
+                    ? homepageMap.get(sum.svcId())
+                    : null;
+
             result.add(new RecommendationItem(
                     sum.svcId(),
                     sum.title(),
@@ -298,7 +331,8 @@ public class RecommendationService {
                     sum.applyPeriod(),
                     sum.applyMethod(),
                     roundScore,
-                    reasons
+                    reasons,
+                    homepage
             ));
         }
         return result;
@@ -331,6 +365,13 @@ public class RecommendationService {
                 )
                 .then();
     }
+
+    // service + homepageMap 묶어서 전달용 내부 record
+    private record JoinData(
+            List<Gov24ServiceEntity> entities,
+            Map<String, String> homepageMap
+    ) {}
+
 
     private record Scored(String svcId, double score) {}
 }

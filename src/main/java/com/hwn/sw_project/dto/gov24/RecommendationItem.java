@@ -11,5 +11,6 @@ public record RecommendationItem(
         String applyPeriod,
         String applyMethod,
         double score,
-        List<String> matchedReasons
+        List<String> matchedReasons,
+        String homepage
 ) {}
