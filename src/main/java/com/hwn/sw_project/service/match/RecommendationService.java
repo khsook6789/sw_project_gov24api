@@ -6,24 +6,38 @@ import com.hwn.sw_project.dto.gov24.SupportConditionsDTO;
 import com.hwn.sw_project.dto.gov24.SupportConditionsPage;
 import com.hwn.sw_project.dto.gov24.RecommendationItem;
 import com.hwn.sw_project.dto.gov24.UserProfile;
+import com.hwn.sw_project.entity.Gov24ServiceEntity;
+import com.hwn.sw_project.repository.Gov24ServiceRepository;
 import com.hwn.sw_project.service.gov24.Gov24Client;
+import com.hwn.sw_project.service.gov24.Gov24Service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class RecommendationService {
     private final Gov24Client gov24Client;
+    private final Gov24ServiceRepository serviceRepo;
 
     // 한 번에 받아오는 supportConditions 페이지 사이즈
     private static final int CONDITIONS_PER_PAGE = 200;
+
+    // ★ In-memory 캐시
+    private final AtomicReference<List<SupportConditionsDTO>> cachedConditions = new AtomicReference<>();
+    private volatile Instant cachedAt = null;
+    // TTL은 적당히 조정 가능 (예: 30분)
+    private static final Duration CACHE_TTL = Duration.ofMinutes(30);
 
     /**
      * 사용자 프로필 기반 추천
@@ -33,18 +47,28 @@ public class RecommendationService {
     public Mono<List<RecommendationItem>> recommend(UserProfile user, int topN) {
         int internalTop = topN*20;
 
-        return scanAllSupportConditions()
+        return getAllSupportConditionsCached()
+                .flatMapMany(Flux::fromIterable)
                 .filter(sc -> SupportMatcher.matches(sc, user))
                 .doOnSubscribe(s -> log.info("scanning supportConditions..."))
                 .collectList()
                 .doOnNext(list -> log.info("matched supportConditions: {}", list.size()))
                 .flatMap(list -> {
+
+                    // svcId → SupportConditionsDTO 매핑 (모든 필터된 조건 저장)
+                    Map<String, SupportConditionsDTO> condById = list.stream()
+                            .filter(sc -> sc.서비스ID() != null && !sc.서비스ID().isBlank())
+                            .collect(Collectors.toMap(
+                                    SupportConditionsDTO::서비스ID,
+                                    s -> s,
+                                    (a, b) -> a
+                            ));
+
                     // 1) 점수 계산 + 정렬
                     var scored = list.stream()
                             .map(sc -> new Scored(
                                     sc.서비스ID(),
-                                    SupportMatcher.score(sc, user),
-                                    SupportMatcher.reasons(sc, user)
+                                    SupportMatcher.score(sc, user)
                             ))
                             .filter(s->s.svcId != null && !s.svcId.isBlank())
                             .sorted((a, b) -> Double.compare(b.score, a.score))
@@ -78,41 +102,17 @@ public class RecommendationService {
                         return Mono.just(List.<RecommendationItem>of());
                     }
 
-                    // 3) svcId별로 단건 조회 → (Scored + Summary) join
-                    return Flux.fromIterable(topScored)
-                            .concatMap(scoredItem ->
-                                    gov24Client.fetchServiceSummaryBySvcId(scoredItem.svcId)
-                                            .map(summary -> new Joined(scoredItem, summary))
-                                            .onErrorResume(ex -> {
-                                                log.warn("⚠ serviceList 단건 조회 실패: svcId={}, ex={}",
-                                                        scoredItem.svcId, ex.toString());
-                                                return Mono.empty();
-                                            })
-                            )
-                            .collectList()
-                            .map(joinedList -> {
-                                log.info("after join (per-id, before category boost): {}", joinedList.size());
-
-                                // 4) RecommendationItem로 변환
-                                List<RecommendationItem> items = joinedList.stream()
-                                        .map(j -> {
-                                            var s = j.scored();
-                                            var sum = j.summary();
-                                            double roundScore = Math.round(s.score * 10000) / 10000.0;
-
-                                            return new RecommendationItem(
-                                                    sum.svcId(),
-                                                    sum.title(),
-                                                    sum.providerName(),
-                                                    sum.category(),
-                                                    sum.summary(),
-                                                    sum.applyPeriod(),
-                                                    sum.applyMethod(),
-                                                    roundScore,
-                                                    s.reasons
-                                            );
-                                        })
+                    // 3) DB에서 serviceList 요약 한 번에 조회 (블로킹이므로 boundedElastic 사용)
+                    return Mono.fromCallable(() -> serviceRepo.findBySvcIdIn(svcIds))
+                            .subscribeOn(Schedulers.boundedElastic())
+                            .map(entities -> {
+                                // Entity → ServiceSummary 변환
+                                List<ServiceSummary> summaries = entities.stream()
+                                        .map(this::toSummary)
                                         .toList();
+
+                                // Scored + Summary join
+                                List<RecommendationItem> items = mapJoin(topScored, summaries, condById, user);
 
                                 // 5) 카테고리 boost 적용
                                 List<RecommendationItem> boosted =
@@ -249,14 +249,30 @@ public class RecommendationService {
                 .flatMapIterable(SupportConditionsPage::data);
     }
 
-
+    private ServiceSummary toSummary(Gov24ServiceEntity e) {
+        if (e == null) return null;
+        return new ServiceSummary(
+                e.getSvcId(),
+                e.getTitle(),
+                e.getProviderName(),
+                e.getCategory(),
+                e.getSummary(),
+                e.getDetailUrl(),
+                e.getApplyPeriod(),
+                e.getApplyMethod(),
+                e.getRegDate(),
+                e.getDeadline(),
+                e.getViewCount()
+        );
+    }
 
     /**
      * supportConditions 점수 결과(Scored) + serviceList 요약(ServiceSummary) join
      */
     private List<RecommendationItem> mapJoin(List<Scored> scored,
                                              List<ServiceSummary> summaries,
-                                             String categoryFilter) {
+                                             Map<String, SupportConditionsDTO> condById,
+                                             UserProfile user) {
         Map<String, ServiceSummary> byId = summaries.stream()
                 .collect(Collectors.toMap(ServiceSummary::svcId, s -> s, (a, b) -> a));
 
@@ -264,14 +280,14 @@ public class RecommendationService {
         for (Scored s : scored) {
             var sum = byId.get(s.svcId);
             if (sum == null) continue;
-            double roundScore = Math.round(s.score * 10000) / 10000.0;
 
-            // 필요하면 카테고리 필터:
-            // if (categoryFilter != null && !categoryFilter.isBlank()) {
-            //     if (sum.category() == null || !sum.category().contains(categoryFilter)) {
-            //         continue;
-            //     }
-            // }
+            var cond = condById.get(s.svcId);
+
+            List<String> reasons = (cond != null)
+                    ? SupportMatcher.reasons(cond, user)
+                    : List.of();
+
+            double roundScore = Math.round(s.score * 10000) / 10000.0;
 
             result.add(new RecommendationItem(
                     sum.svcId(),
@@ -282,13 +298,32 @@ public class RecommendationService {
                     sum.applyPeriod(),
                     sum.applyMethod(),
                     roundScore,
-                    s.reasons
+                    reasons
             ));
         }
         return result;
     }
 
-    private record Scored(String svcId, double score, List<String> reasons) {}
+    private Mono<List<SupportConditionsDTO>> getAllSupportConditionsCached() {
+        var current = cachedConditions.get();
+        var now = Instant.now();
 
-    private record Joined(Scored scored, ServiceSummary summary) {}
+        if (current != null && cachedAt != null && Duration.between(cachedAt, now).compareTo(CACHE_TTL) < 0) {
+            // 캐시 유효
+            log.info("using cached supportConditions, size={}", current.size());
+            return Mono.just(current);
+        }
+
+        // 캐시 없거나 만료 → 새로 로딩
+        return scanAllSupportConditions()
+                .collectList()
+                .doOnNext(list -> {
+                    cachedConditions.set(list);
+                    cachedAt = Instant.now();
+                    log.info("🔄 refreshed supportConditions cache, size={}", list.size());
+                });
+    }
+
+
+    private record Scored(String svcId, double score) {}
 }
