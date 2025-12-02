@@ -1,6 +1,5 @@
 package com.hwn.sw_project.service.match;
 
-import com.hwn.sw_project.dto.gov24.common.PageResponse;
 import com.hwn.sw_project.dto.gov24.ServiceSummary;
 import com.hwn.sw_project.dto.gov24.SupportConditionsDTO;
 import com.hwn.sw_project.dto.gov24.SupportConditionsPage;
@@ -11,7 +10,6 @@ import com.hwn.sw_project.entity.Gov24ServiceEntity;
 import com.hwn.sw_project.repository.Gov24ServiceDetailRepository;
 import com.hwn.sw_project.repository.Gov24ServiceRepository;
 import com.hwn.sw_project.service.gov24.Gov24Client;
-import com.hwn.sw_project.service.gov24.Gov24Service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
@@ -182,6 +180,10 @@ public class RecommendationService {
                             .toList();
 
                     log.info("after re-ranking: final size={}", finalList.size());
+                    log.info("user.category = {}", user.category());
+                    finalList.stream()
+                            .limit(30)
+                            .forEach(it -> log.info("item: {} / category={}", it.svcId(), it.category()));
                     return finalList;
                 });
     }
@@ -245,24 +247,29 @@ public class RecommendationService {
 
         String cat = preferredCategory.trim();
 
-        // 새로운 점수 적용된 리스트 생성
-        record ScoredItem(RecommendationItem item, double boostedScore) {}
+        return list.stream()
+                .sorted((a, b) -> {
+                    boolean aMatch = matchesCategory(a.category(), cat);
+                    boolean bMatch = matchesCategory(b.category(), cat);
 
-        var boosted = list.stream()
-                .map(item -> {
-                    double score = item.score();
-
-                    // 카테고리를 부분매칭(포함 여부 기준) 적용
-                    if (item.category() != null && item.category().contains(cat)) {
-                        score += 0.8; // Soft Boost!
+                    // 1) 카테고리 매칭 여부 우선
+                    if (aMatch != bMatch) {
+                        // true 가 더 앞으로 오도록 (b가 true이면 양수 → b가 앞, 여기서는 내림차순이므로 반대로)
+                        return Boolean.compare(bMatch, aMatch);
                     }
-                    return new ScoredItem(item, score);
-                })
-                .sorted((a, b) -> Double.compare(b.boostedScore(), a.boostedScore()))
-                .map(ScoredItem::item)
-                .toList();
 
-        return boosted;
+                    // 2) 둘 다 매치 or 둘 다 미매치 → 기존 score 로 정렬
+                    return Double.compare(b.score(), a.score());
+                })
+                .toList();
+    }
+
+    private boolean matchesCategory(String itemCategory, String preferredCategory) {
+        if (itemCategory == null) return false;
+        String c = itemCategory.trim();
+        // 완전 일치로만 할지, 포함으로 볼지는 선택사항
+        // return c.equals(preferredCategory);
+        return c.contains(preferredCategory); // "경력·취업" 같은 문자열 포함 기준
     }
 
     /**
