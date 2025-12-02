@@ -12,9 +12,13 @@ import com.hwn.sw_project.repository.Gov24ServiceRepository;
 import com.hwn.sw_project.repository.Gov24ServiceDetailRepository;
 import com.hwn.sw_project.util.Gov24DateParser;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 import org.springframework.web.server.ResponseStatusException;
@@ -29,7 +33,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class Gov24Service {
@@ -46,15 +50,6 @@ public class Gov24Service {
     ){
         // 수정일시 파싱 (여러 포맷 가능성을 대비해 헬퍼 메서드 사용)
         LocalDate apiUpdatedAt = parseUpdatedAt(dto.updatedAt());
-
-//        String rawJson = null;
-//        if (dto.raw() != null) {
-//            try {
-//                rawJson = objectMapper.writeValueAsString(dto.raw());
-//            } catch (JsonProcessingException e) {
-//
-//            }
-//        }
 
         return Gov24ServiceDetailEntity.builder()
                 .svcId(serviceEntity.getSvcId())
@@ -207,6 +202,61 @@ public class Gov24Service {
                 // 상세에는 보통 상세조회URL이 없으므로 null 허용
                 getText(obj, "온라인신청사이트URL", null),
                 raw
+        );
+    }
+
+    /**
+     * 주어진 svcId와 "비슷한" 지원금 목록 조회
+     * 기준:
+     *  - 같은 카테고리(category)
+     *  - 자기 자신(svcId) 제외
+     *  - 같은 providerName 우선
+     *  - viewCount 높은 순 정렬
+     */
+    @Transactional(readOnly = true)
+    public List<ServiceSummary> findSimilarServices(String svcId, int top) {
+        // 1) 기준 서비스 조회
+        Gov24ServiceEntity base = serviceRepo.findById(svcId)
+                .orElseThrow(() -> new IllegalArgumentException("지원금을 찾을 수 없습니다. svcId=" + svcId));
+
+        String category = base.getCategory();
+        String providerName = base.getProviderName();
+
+        if (category == null || category.isBlank()) {
+            log.info("[similar] 카테고리가 없어 유사 추천 불가 svcId={}", svcId);
+            return List.of();
+        }
+
+        int size = (top <= 0 || top > 50) ? 5 : top;
+
+        // JPQL에 ORDER BY가 들어 있으므로 Sort는 따로 줄 필요 없음
+        Pageable pageable = PageRequest.of(0, size);
+
+        var page = serviceRepo.findSimilarByCategoryAndProvider(
+                category,
+                svcId,
+                providerName,
+                pageable
+        );
+
+        return page.getContent().stream()
+                .map(this::toSummary)
+                .toList();
+    }
+
+    private ServiceSummary toSummary(Gov24ServiceEntity e) {
+        return new ServiceSummary(
+                e.getSvcId(),
+                e.getTitle(),
+                e.getSummary(),
+                e.getProviderName(),
+                e.getCategory(),
+                e.getApplyPeriod(),
+                e.getApplyMethod(),
+                e.getDetailUrl(),
+                e.getRegDate(),
+                e.getDeadline(),
+                e.getViewCount()
         );
     }
 

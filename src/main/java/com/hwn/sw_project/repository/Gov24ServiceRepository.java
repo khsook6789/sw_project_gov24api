@@ -36,6 +36,31 @@ public interface Gov24ServiceRepository extends JpaRepository<Gov24ServiceEntity
             Pageable pageable
     );
 
+    //   같은 카테고리 + 자기 자신 제외
+    //   정렬 우선순위:
+    //   1) providerName이 기준 서비스와 같은 것 먼저
+    //   2) 그 안에서 viewCount 내림차순
+    //   3) tie-breaker로 svcId 오름차순
+    @Query("""
+        SELECT g
+        FROM Gov24ServiceEntity g
+        WHERE g.category = :category
+          AND g.svcId <> :svcId
+        ORDER BY
+          CASE 
+            WHEN (:providerName IS NOT NULL AND g.providerName = :providerName) THEN 0 
+            ELSE 1 
+          END,
+          g.viewCount DESC,
+          g.svcId ASC
+        """)
+    Page<Gov24ServiceEntity> findSimilarByCategoryAndProvider(
+            @Param("category") String category,
+            @Param("svcId") String svcId,
+            @Param("providerName") String providerName,
+            Pageable pageable
+    );
+
     // deadline NOT NULL 인 것만
     Page<Gov24ServiceEntity> findByDeadlineIsNotNull(Pageable pageable);
 

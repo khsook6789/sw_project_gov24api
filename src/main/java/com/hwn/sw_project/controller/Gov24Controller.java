@@ -10,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/gov24")
@@ -36,5 +38,13 @@ public class Gov24Controller {
             @RequestParam(required = false) Integer perPage
     ){
         return dbService.listSchedule(page, perPage);
+    }
+
+    @GetMapping("/services/{svcId}/similar")
+    public List<ServiceSummary> getSimilarServices(
+            @PathVariable String svcId,
+            @RequestParam(name = "top", required = false, defaultValue = "5") int top
+    ) {
+        return service.findSimilarServices(svcId, top);
     }
 }
