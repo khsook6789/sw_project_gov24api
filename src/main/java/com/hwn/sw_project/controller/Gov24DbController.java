@@ -29,7 +29,7 @@ public class Gov24DbController {
         return dbService.searchFromDb(page, size, keyword, category, sort);
     }
 
-    // ★ 클릭 추적 API
+    // 클릭 추적 API
     @PostMapping("/services/{svcId}/click")
     public void click(@PathVariable String svcId) {
         dbService.increaseViewCount(svcId);

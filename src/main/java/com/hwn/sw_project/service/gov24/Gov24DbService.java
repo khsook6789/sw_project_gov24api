@@ -1,5 +1,6 @@
 package com.hwn.sw_project.service.gov24;
 
+import com.hwn.sw_project.dto.gov24.ServiceScheduleItem;
 import com.hwn.sw_project.dto.gov24.ServiceSummary;
 import com.hwn.sw_project.dto.gov24.common.PageResponse;
 import com.hwn.sw_project.entity.Gov24ServiceEntity;
@@ -73,6 +74,34 @@ public class Gov24DbService {
                 dtoList.size(),
                 pageResult.getTotalElements(),
                 dtoList
+        );
+    }
+
+    public PageResponse<ServiceScheduleItem> listSchedule(Integer page, Integer perPage) {
+        int pg = (page == null || page < 1) ? 1 : page;
+        int pp = (perPage == null || perPage < 1) ? 200 : perPage;
+
+        Pageable pageable = PageRequest.of(pg - 1, pp, Sort.by("deadline").ascending());
+
+        var result = repo.findByDeadlineIsNotNull(pageable);
+
+        List<ServiceScheduleItem> data = result.getContent().stream()
+                .map(e -> new ServiceScheduleItem(
+                        e.getSvcId(),
+                        e.getTitle(),
+                        e.getProviderName(),
+                        e.getCategory(),
+                        e.getApplyPeriod(),
+                        e.getDeadline()
+                ))
+                .toList();
+
+        return new PageResponse<>(
+                pg,
+                pp,
+                data.size(),
+                (int) result.getTotalElements(),
+                data
         );
     }
 

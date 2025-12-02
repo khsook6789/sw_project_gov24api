@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -35,6 +36,9 @@ public interface Gov24ServiceRepository extends JpaRepository<Gov24ServiceEntity
             Pageable pageable
     );
 
+    // deadline NOT NULL 인 것만
+    Page<Gov24ServiceEntity> findByDeadlineIsNotNull(Pageable pageable);
+
     @Query("""
     SELECT g FROM Gov24ServiceEntity g
     LEFT JOIN g.detail d
@@ -42,7 +46,7 @@ public interface Gov24ServiceRepository extends JpaRepository<Gov24ServiceEntity
 """)
     Page<Gov24ServiceEntity> findAllOrderByUpdated(Pageable pageable);
 
-    // 🔥 serviceList + serviceDetail 모두에서 검색 + 수정일시(apiUpdatedAt) 최신순 정렬
+    // serviceList + serviceDetail 모두에서 검색 + 수정일시(apiUpdatedAt) 최신순 정렬
     @Query("""
         SELECT g
         FROM Gov24ServiceEntity g
