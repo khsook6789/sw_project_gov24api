@@ -5,6 +5,7 @@ import com.hwn.sw_project.dto.auth.TokenResponse;
 import com.hwn.sw_project.dto.user.SignUpRequest;
 import com.hwn.sw_project.dto.user.UserResponse;
 import com.hwn.sw_project.entity.AppUser;
+import com.hwn.sw_project.entity.UserRole;
 import com.hwn.sw_project.repository.AppUserRepository;
 import com.hwn.sw_project.security.JwtProvider;
 import lombok.RequiredArgsConstructor;
@@ -40,7 +41,8 @@ public class AuthServiceImpl implements AuthService{
                 .build();
         userRepo.save(user);
 
-        var claims = Map.of(CLAIM_ROLES, Set.of(ROLE_USER));
+        var roleAuthority = toAuthority(user.getRole());
+        var claims = Map.of(CLAIM_ROLES, Set.of(roleAuthority));
         var access = jwt.createAccessToken(user.getEmail(), claims);
         var refresh = jwt.createRefreshToken(user.getEmail());
         return new TokenResponse(access, refresh);
@@ -55,11 +57,22 @@ public class AuthServiceImpl implements AuthService{
         user.setUpdatedAt(Instant.now());
         userRepo.save(user);
 
-        var claims = Map.of(CLAIM_ROLES, Set.of(ROLE_USER));
+        var roleAuthority = toAuthority(user.getRole());
+        var claims = Map.of(CLAIM_ROLES, Set.of(roleAuthority));
         var access = jwt.createAccessToken(user.getEmail(), claims);
         var refresh = jwt.createRefreshToken(user.getEmail());
         return new TokenResponse(access, refresh);
     }
+
+    private String toAuthority(UserRole role) {
+        // SecurityConstants에 ROLE_USER, ROLE_ADMIN 상수 있다고 가정
+        return switch (role) {
+            case ADMIN -> "ROLE_ADMIN";
+            case USER -> "ROLE_USER";
+            default -> "ROLE_USER";
+        };
+    }
+
 
     @Override
     public TokenResponse refresh(String refreshToken) {
@@ -67,7 +80,8 @@ public class AuthServiceImpl implements AuthService{
         var subject = jws.getPayload().getSubject();
         var user = userRepo.findByEmail(subject).orElseThrow();
 
-        var claims = Map.of(CLAIM_ROLES, Set.of(ROLE_USER));
+        var roleAuthority = toAuthority(user.getRole());
+        var claims = Map.of(CLAIM_ROLES, Set.of(roleAuthority));
         var access = jwt.createAccessToken(user.getEmail(), claims);
         var refresh = jwt.createRefreshToken(user.getEmail());
         return new TokenResponse(access, refresh);
