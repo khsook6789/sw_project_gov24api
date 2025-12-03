@@ -3,6 +3,8 @@ package com.hwn.sw_project.config;
 import com.hwn.sw_project.security.CustomUserDetailsService;
 import com.hwn.sw_project.security.JwtAuthenticationFilter;
 import com.hwn.sw_project.security.JwtProvider;
+import com.hwn.sw_project.security.oauth2.CustomOAuth2UserService;
+import com.hwn.sw_project.security.oauth2.OAuth2LoginSuccessHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.*;
 import org.springframework.http.HttpMethod;
@@ -11,8 +13,6 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.*;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.*;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.*;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.*;
@@ -25,6 +25,8 @@ import java.util.List;
 public class SecurityConfig {
     private final JwtProvider jwtProvider;
     private final CustomUserDetailsService userDetailsService;
+    private final CustomOAuth2UserService customOAuth2UserService;
+    private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception{
@@ -44,6 +46,8 @@ public class SecurityConfig {
                                 .requestMatchers("/api/gov24/**").permitAll()
 
                                 .requestMatchers("/api/recommendations/**").permitAll()
+
+                                .requestMatchers("/oauth2/**", "/login/**").permitAll()
                                 // 로그인/회원가입/리프레시 공개
                                 .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/login", "/api/auth/refresh").permitAll()
 
@@ -59,6 +63,13 @@ public class SecurityConfig {
 //                        .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
 //                        .anyRequest().authenticated()
                 )
+                // OAuth2 로그인 설정
+                .oauth2Login(oauth -> oauth
+                        .userInfoEndpoint(userInfo -> userInfo
+                                .userService(customOAuth2UserService)
+                        )
+                        .successHandler(oAuth2LoginSuccessHandler)
+                )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .cors(c -> c.configurationSource(corsConfigurationSource()));
         return http.build();
@@ -67,11 +78,6 @@ public class SecurityConfig {
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration cfg) throws Exception{
         return cfg.getAuthenticationManager();
-    }
-
-    @Bean
-    public PasswordEncoder passwordEncoder(){
-        return new BCryptPasswordEncoder();
     }
 
     @Bean

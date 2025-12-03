@@ -27,6 +27,13 @@ public class AppUser {
     @Column(nullable = false)
     private String password;
 
+    // 🔹 소셜 로그인용 필드 추가
+    @Column(length = 20)
+    private String provider;   // 예: "NAVER"
+
+    @Column(length = 100)
+    private String providerId; // 네이버에서 주는 고유 id
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     @Builder.Default
