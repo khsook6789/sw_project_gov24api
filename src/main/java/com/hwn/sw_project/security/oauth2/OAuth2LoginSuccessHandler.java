@@ -51,7 +51,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         String refreshToken = jwtProvider.createRefreshToken(user.getEmail());
 
         String targetUrl = UriComponentsBuilder
-                .fromUriString("http://localhost:3000/oauth2/redirect")
+                .fromUriString("http://210.104.76.140/oauth2/redirect")
                 .queryParam("accessToken", accessToken)
                 .queryParam("refreshToken", refreshToken)
                 .build()
